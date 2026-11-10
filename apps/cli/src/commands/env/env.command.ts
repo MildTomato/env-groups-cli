@@ -1,6 +1,8 @@
 import { Command } from "effect/cli";
 
 import { envListCommand } from "./list/list.command.ts";
+import { envSetCommand } from "./set/set.command.ts";
+import { envUnsetCommand } from "./unset/unset.command.ts";
 
 /**
  * `supabase env`: environments for a project, through env-groups. Registered only when
@@ -11,5 +13,5 @@ export const envCommand = Command.make("env").pipe(
     "Manage environments through env-groups: set a value once, and every branch on that environment gets it.",
   ),
   Command.withShortDescription("Manage environments (env-groups)"),
-  Command.withSubcommands([envListCommand]),
+  Command.withSubcommands([envListCommand, envSetCommand, envUnsetCommand]),
 );
