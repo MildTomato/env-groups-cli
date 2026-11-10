@@ -1,4 +1,4 @@
-import { Effect, Option } from "effect";
+import { Effect, Layer, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import type * as CliCommand from "effect/cli/Command";
 
@@ -16,6 +16,21 @@ import { managementApiRuntimeLayer } from "../../command-internal/management-api
 import { withCommandTelemetry } from "../../telemetry/command-telemetry.ts";
 import { link } from "./link.handler.ts";
 import { withTargetPolicy } from "../../command-internal/target/target-policy.ts";
+
+import { envGroupsLinkRepoStep } from "../../env-groups/env-groups-repo.ts";
+import { envGroupsLayer } from "../../env-groups/env-groups.layer.ts";
+import { httpClientLayer } from "../../auth/http-debug.layer.ts";
+import { commandSettingsLayer } from "../../config/command-settings.layer.ts";
+import { debugLoggerLayer } from "../../command-internal/debug-logger.layer.ts";
+import { browserLayer } from "../../shared/runtime/browser.layer.ts";
+
+const envGroupsLinkLayer = Layer.mergeAll(
+  envGroupsLayer.pipe(
+    Layer.provide(httpClientLayer.pipe(Layer.provide(debugLoggerLayer))),
+    Layer.provide(commandSettingsLayer.pipe(Layer.provide(debugLoggerLayer))),
+  ),
+  browserLayer,
+);
 
 const config = {
   refOrBranch: Argument.String("ref-or-branch").pipe(
@@ -49,8 +64,11 @@ const config = {
 
 export type LinkFlags = CliCommand.Command.Config.Infer<typeof config>;
 
+// This fork: once linked, connect the folder's GitHub repo through env-groups (a no-op
+// without SUPABASE_ENV_GROUPS_URL).
 const linkHandler = (flags: LinkFlags) =>
   link(flags).pipe(
+    Effect.tap(() => envGroupsLinkRepoStep),
     withCommandTelemetry({
       flags,
     }),
@@ -113,6 +131,7 @@ export const linkCommand = Command.make("link", config).pipe(
     ),
   ),
   Command.withHandler(linkHandler),
+  Command.provide(envGroupsLinkLayer),
   Command.provide(managementApiRuntimeLayer(["link"])),
   Command.provide(cliConfigValuesLayer),
   // Outermost, so it runs before the management API runtime resolves the access token.
