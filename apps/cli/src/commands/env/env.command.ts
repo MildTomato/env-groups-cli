@@ -1,5 +1,6 @@
 import { Command } from "effect/cli";
 
+import { envCheckCommand } from "./check/check.command.ts";
 import { envListCommand } from "./list/list.command.ts";
 import { envSetCommand } from "./set/set.command.ts";
 import { envUnsetCommand } from "./unset/unset.command.ts";
@@ -13,5 +14,5 @@ export const envCommand = Command.make("env").pipe(
     "Manage environments through env-groups: set a value once, and every branch on that environment gets it.",
   ),
   Command.withShortDescription("Manage environments (env-groups)"),
-  Command.withSubcommands([envListCommand, envSetCommand, envUnsetCommand]),
+  Command.withSubcommands([envCheckCommand, envListCommand, envSetCommand, envUnsetCommand]),
 );

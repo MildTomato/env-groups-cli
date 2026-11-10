@@ -4,6 +4,7 @@ import { httpClientLayer } from "../../auth/http-debug.layer.ts";
 import { commandSettingsLayer } from "../../config/command-settings.layer.ts";
 import { debugLoggerLayer } from "../../command-internal/debug-logger.layer.ts";
 import { envGroupsLayer } from "../../env-groups/env-groups.layer.ts";
+import { browserLayer } from "../../shared/runtime/browser.layer.ts";
 import { commandRuntimeLayer } from "../../shared/runtime/command-runtime.layer.ts";
 import { stdinLayer } from "../../shared/runtime/stdin.layer.ts";
 import { telemetryStateLayer } from "../../telemetry/telemetry-state.layer.ts";
@@ -23,5 +24,6 @@ export const envRuntimeLayer = (commandPath: ReadonlyArray<string>) => {
     telemetryStateLayer,
     commandRuntimeLayer(commandPath),
     stdinLayer,
+    browserLayer,
   );
 };
