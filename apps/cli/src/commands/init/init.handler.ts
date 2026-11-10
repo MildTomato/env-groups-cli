@@ -5,6 +5,7 @@ import { Output } from "../../shared/output/output.service.ts";
 import { resolveExperimentalFeature } from "../../shared/config/experimental-feature.ts";
 import { WorkdirFlag, resolveYes } from "../../command-internal/global-flags.ts";
 import { InitConfigExistsError } from "./init.errors.ts";
+import { resolveEnvGroupsEnabled } from "../env/env-gate.ts";
 import type { InitFlags } from "./init.command.ts";
 
 export const init = Effect.fn("init")(function* (flags: InitFlags) {
@@ -29,6 +30,8 @@ export const init = Effect.fn("init")(function* (flags: InitFlags) {
     withVscodeSettings: flags.withVscodeWorkspace || flags.withVscodeSettings,
     withIntellijSettings: flags.withIntellijSettings,
     experimentalStack,
+    // env-groups fork: only what this project needs, not the full template.
+    minimalConfig: yield* resolveEnvGroupsEnabled,
   });
   yield* Effect.annotateCurrentSpan({
     "init.created": result.created,

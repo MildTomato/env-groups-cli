@@ -10,6 +10,7 @@ import {
   VSCODE_EXTENSIONS_TEMPLATE,
   VSCODE_SETTINGS_TEMPLATE,
   renderCliConfigTemplate,
+  renderMinimalCliConfigTemplate,
 } from "./project-init.templates.ts";
 import { InitParseSettingsError } from "./project-init.errors.ts";
 
@@ -52,6 +53,8 @@ export interface ProjectInitOptions {
   readonly withIntellijSettings: boolean;
   /** Persist `experimental.stack` and omit default stack listener ports. */
   readonly experimentalStack?: boolean;
+  /** Write only what this project needs instead of the full template (env-groups fork). */
+  readonly minimalConfig?: boolean;
 }
 
 // Files/directories are pinned to 0644/0755 explicitly rather than relying
@@ -242,7 +245,11 @@ export const initProject = Effect.fnUntraced(function* (options: ProjectInitOpti
   yield* fs.makeDirectory(supabaseDir, { recursive: true, mode: INIT_DIR_MODE });
   yield* fs.writeFileString(
     configTomlPath,
-    renderCliConfigTemplate(projectId, options.useOrioledb, options.experimentalStack === true),
+    (options.minimalConfig === true ? renderMinimalCliConfigTemplate : renderCliConfigTemplate)(
+      projectId,
+      options.useOrioledb,
+      options.experimentalStack === true,
+    ),
     { mode: INIT_FILE_MODE },
   );
   for (const jsonConfigPath of jsonConfigPaths) {

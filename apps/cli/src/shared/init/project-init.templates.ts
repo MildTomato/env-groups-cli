@@ -542,3 +542,24 @@ export function renderCliConfigTemplate(
   );
   return experimentalStack ? applyExperimentalStackInitTemplate(rendered) : rendered;
 }
+
+/**
+ * The env-groups fork's `config.toml`: only what this project needs. Every setting left out
+ * takes its default when the file is read, and `config push` leaves it as the project has it,
+ * so the file only ever holds what's different about this project.
+ */
+export function renderMinimalCliConfigTemplate(
+  projectId: string,
+  useOrioledb: boolean,
+  experimentalStack = false,
+): string {
+  const lines = [
+    `#:schema ${CLI_CONFIG_SCHEMA_URL}`,
+    "# Only what's different about this project goes here. Everything else uses its default.",
+    "# Settings: https://supabase.com/docs/guides/local-development/cli/config",
+    `project_id = "${projectId}"`,
+  ];
+  if (useOrioledb) lines.push("", "[db]", `orioledb_version = "${initOrioledbVersion()}"`);
+  if (experimentalStack) lines.push("", "[experimental]", "stack = true");
+  return `${lines.join("\n")}\n`;
+}

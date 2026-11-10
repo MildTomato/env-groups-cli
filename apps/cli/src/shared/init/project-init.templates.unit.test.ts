@@ -18,6 +18,7 @@ import {
   VSCODE_EXTENSIONS_TEMPLATE,
   VSCODE_SETTINGS_TEMPLATE,
   renderCliConfigTemplate,
+  renderMinimalCliConfigTemplate,
 } from "./project-init.templates.ts";
 
 function normalizeNewlines(text: string): string {
@@ -405,5 +406,48 @@ describe("config pull surgical editor round trip over the rendered scaffold", ()
         createdTables: [["remotes", "staging"]],
       },
     ]);
+  });
+
+  describe("minimal config (env-groups fork)", () => {
+    it("holds only the project, plus OrioleDB or the stack when chosen", () => {
+      const plain = SmolToml.parse(renderMinimalCliConfigTemplate("demo-project", false));
+      expect(plain).toEqual({ project_id: "demo-project" });
+
+      for (const experimentalStack of [false, true]) {
+        for (const useOrioledb of [false, true]) {
+          const parsed = SmolToml.parse(
+            renderMinimalCliConfigTemplate("demo-project", useOrioledb, experimentalStack),
+          );
+          expect(findUnknownCliConfigKeys(parsed)).toEqual([]);
+          expect(Object.keys(parsed).sort()).toEqual(
+            [
+              "project_id",
+              ...(useOrioledb ? ["db"] : []),
+              ...(experimentalStack ? ["experimental"] : []),
+            ].sort(),
+          );
+        }
+      }
+    });
+
+    it.effect("loads with every left-out setting at its default", () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const cwd = yield* fs.makeTempDirectoryScoped({ prefix: "supabase-init-minimal-" });
+        yield* fs.makeDirectory(path.join(cwd, "supabase"));
+        yield* fs.writeFileString(
+          path.join(cwd, "supabase", "config.toml"),
+          renderMinimalCliConfigTemplate("demo-project", false),
+        );
+        const loaded = yield* loadCliConfig(cwd, { cliCompat: true });
+
+        expect(loaded?.config.project_id).toBe("demo-project");
+        expect(loaded?.config.auth.jwt_expiry).toBe(3600);
+        expect(loaded?.config.auth.email.enable_signup).toBe(true);
+        expect(loaded?.config.api.port).toBe(54321);
+        expect(loaded?.deprecatedPaths).toEqual([]);
+      }).pipe(Effect.scoped, Effect.provide(BunServices.layer)),
+    );
   });
 });
