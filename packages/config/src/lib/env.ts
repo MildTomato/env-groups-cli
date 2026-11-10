@@ -312,3 +312,41 @@ export function interpolateEnvReferencesAgainstSchema(
     options?.skip,
   );
 }
+
+// An empty `env()` (env-groups fork): the setting's own name, so nobody has to invent one.
+// `auth.email.smtp.pass = "env()"` reads `SUPABASE_AUTH_EMAIL_SMTP_PASS`, the same naming the
+// CLI's own env overrides use. It's rewritten to `env(SUPABASE_...)` as the file is read, so
+// everything after that (substitution, checks, diff, push) treats it like any `env(NAME)`.
+const EMPTY_ENV_REGEX = /^env\(\s*\)$/;
+
+/** The environment variable a setting's empty `env()` reads: `SUPABASE_` plus its path. */
+export function envDefaultName(path: ReadonlyArray<string>): string {
+  // A `[remotes.<name>]` block names the same settings as the top level.
+  const settingPath = path[0] === "remotes" ? path.slice(2) : path;
+  return `SUPABASE_${settingPath
+    .join("_")
+    .toUpperCase()
+    .replace(/[^A-Z0-9_]/g, "_")}`;
+}
+
+export function fillEmptyEnvReferences(
+  document: unknown,
+  path: ReadonlyArray<string> = [],
+): unknown {
+  if (typeof document === "string") {
+    return EMPTY_ENV_REGEX.test(document.trim()) ? `env(${envDefaultName(path)})` : document;
+  }
+  if (Array.isArray(document)) {
+    // An array element's `env()` takes the array setting's name.
+    return document.map((item) => fillEmptyEnvReferences(item, path));
+  }
+  if (typeof document === "object" && document !== null) {
+    return Object.fromEntries(
+      Object.entries(document).map(([key, value]) => [
+        key,
+        fillEmptyEnvReferences(value, [...path, key]),
+      ]),
+    );
+  }
+  return document;
+}

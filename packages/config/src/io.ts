@@ -22,7 +22,7 @@ import {
   CliConfigSchemaVersionError,
   CliConfigWriteError,
 } from "./errors.ts";
-import { interpolateEnvReferencesAgainstSchema } from "./lib/env.ts";
+import { fillEmptyEnvReferences, interpolateEnvReferencesAgainstSchema } from "./lib/env.ts";
 import { normalizeDeprecatedProviderSignupKeys } from "./lib/provider-signup.ts";
 import { parseJsonc } from "./jsonc.ts";
 import { findCliProjectPaths } from "./paths.ts";
@@ -234,7 +234,9 @@ const applyRemoteOverride = Effect.fnUntraced(function* (
 });
 
 export function parseCliConfigDocument(content: string, format: ConfigFormat): unknown {
-  return format === "json" ? parseJsonc(content) : SmolToml.parse(content);
+  const document = format === "json" ? parseJsonc(content) : SmolToml.parse(content);
+  // env-groups fork: an empty `env()` takes the setting's own name from here on.
+  return fillEmptyEnvReferences(document);
 }
 
 /**
