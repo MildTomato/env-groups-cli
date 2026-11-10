@@ -13,6 +13,7 @@ import { CliArgs } from "../../shared/cli/cli-args.service.ts";
 import { lastExplicitLongFlagValue } from "../../shared/cli/flag-groups.ts";
 import { ProfileFlag } from "../../command-internal/global-flags.ts";
 import { Output } from "../../shared/output/output.service.ts";
+import { envGroupsLoginStep } from "../../env-groups/env-groups-login.ts";
 import { Stdin } from "../../shared/runtime/stdin.service.ts";
 import { Tty } from "../../shared/runtime/tty.service.ts";
 import { suggestClaudePlugin } from "./login-claude-hint.ts";
@@ -90,8 +91,11 @@ export const login = Effect.fn("login")(function* (flags: LoginFlags) {
 
   // `Effect.tap` runs the profile save only on success; `Effect.ensuring` persists telemetry
   // state on success and failure alike.
+  // This fork: once Supabase is signed in, sign in to env-groups too (a no-op without
+  // SUPABASE_ENV_GROUPS_URL).
   return yield* body.pipe(
     Effect.tap(() => persistProfileName),
+    Effect.tap(() => envGroupsLoginStep),
     Effect.ensuring(telemetryState.flush),
   );
 });

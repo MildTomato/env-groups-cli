@@ -24,6 +24,7 @@ import {
   projectStateModeLayer,
 } from "../shared/config/project-state-mode.ts";
 import { computeCommand } from "../commands/experimental/compute/compute.command.ts";
+import { envCommand } from "../commands/env/env.command.ts";
 import { feedbackCommand } from "../commands/feedback/feedback.command.ts";
 import { functionsCommand } from "../commands/functions/functions.command.ts";
 import { genCommand } from "../commands/gen/gen.command.ts";
@@ -147,6 +148,8 @@ interface RootCommandFeatures {
   readonly projectState?: Exit.Exit<ProjectStateMode, ExperimentalFeatureFlagError>;
   readonly stackBackend?: StackBackend;
   readonly computeEnabled?: boolean;
+  /** `supabase env`, when `SUPABASE_ENV_GROUPS_URL` is set. */
+  readonly envGroupsEnabled?: boolean;
 }
 
 /** Agents default to stream-json for Stack-backed `functions serve`, which rejects json. */
@@ -171,6 +174,7 @@ export const rootCommandForFeatures = (options: RootCommandFeatures = {}) =>
       dbCommand,
       domainsCommand,
       encryptionCommand,
+      ...(options.envGroupsEnabled ? [envCommand] : []),
       feedbackCommand,
       functionsCommand,
       genCommand,

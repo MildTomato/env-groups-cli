@@ -10,6 +10,7 @@ import { browserLayer } from "../../shared/runtime/browser.layer.ts";
 import { stdinLayer } from "../../shared/runtime/stdin.layer.ts";
 import { loginApiLayer } from "../../command-internal/login-api.layer.ts";
 import { loginCryptoLayer } from "../../command-internal/login-crypto.layer.ts";
+import { envGroupsLayer } from "../../env-groups/env-groups.layer.ts";
 
 // `login` builds its own lean runtime instead of `managementApiRuntimeLayer`, since it must not
 // eagerly construct the platform-API client (which fails before a token exists).
@@ -24,12 +25,15 @@ const credentials = commandCredentialsLayer.pipe(
   Layer.provide(debugLoggerLayer),
 );
 const loginApi = loginApiLayer.pipe(Layer.provide(httpClient), Layer.provide(cliSettings));
+// This fork: `login` also signs in to env-groups when SUPABASE_ENV_GROUPS_URL is set.
+const envGroups = envGroupsLayer.pipe(Layer.provide(httpClient), Layer.provide(cliSettings));
 
 export const loginRuntimeLayer = Layer.mergeAll(
   credentials,
   cliSettings,
   httpClient,
   loginApi,
+  envGroups,
   loginCryptoLayer,
   telemetryStateLayer,
   commandRuntimeLayer(["login"]),
